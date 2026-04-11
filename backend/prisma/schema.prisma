@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model GoogleSheet {
+  id              String     @id @default(cuid())
+  spreadsheetId   String     @unique
+  spreadsheetName String
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  tabs            SheetTab[]
+  cases           Case[]
+}
+
+model SheetTab {
+  id            String      @id @default(cuid())
+  googleSheetId String
+  googleSheet   GoogleSheet @relation(fields: [googleSheetId], references: [id], onDelete: Cascade)
+  sheetName     String
+  gid           String
+  cases         Case[]
+}
+
+model LineFriend {
+  id            String          @id @default(cuid())
+  lineUserId    String          @unique
+  displayName   String
+  pictureUrl    String?
+  statusMessage String?
+  syncedAt      DateTime        @default(now())
+  recipients    CaseRecipient[]
+}
+
+model Case {
+  id              String          @id @default(cuid())
+  name            String
+  description     String?
+  googleSheetId   String?
+  googleSheet     GoogleSheet?    @relation(fields: [googleSheetId], references: [id])
+  sheetTabId      String?
+  sheetTab        SheetTab?       @relation(fields: [sheetTabId], references: [id])
+  messageTemplate String?
+  status          CaseStatus      @default(DRAFT)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  recipients      CaseRecipient[]
+  schedules       Schedule[]
+  sendLogs        SendLog[]
+}
+
+model CaseRecipient {
+  id           String     @id @default(cuid())
+  caseId       String
+  case         Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  lineFriendId String
+  lineFriend   LineFriend @relation(fields: [lineFriendId], references: [id])
+
+  @@unique([caseId, lineFriendId])
+}
+
+model Schedule {
+  id             String    @id @default(cuid())
+  caseId         String
+  case           Case      @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  cronExpression String?
+  scheduledAt    DateTime?
+  isRecurring    Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  createdAt      DateTime  @default(now())
+  sendLogs       SendLog[]
+}
+
+model SendLog {
+  id             String     @id @default(cuid())
+  caseId         String
+  case           Case       @relation(fields: [caseId], references: [id])
+  scheduleId     String?
+  schedule       Schedule?  @relation(fields: [scheduleId], references: [id])
+  lineUserId     String
+  recipientName  String     @default("")
+  messageContent String
+  status         SendStatus
+  errorMessage   String?
+  sentAt         DateTime   @default(now())
+}
+
+model Settings {
+  id                       String  @id @default("singleton")
+  googleServiceAccountEmail String  @default("")
+  googlePrivateKey         String  @default("")
+  lineChannelAccessToken   String  @default("")
+  lineChannelSecret        String  @default("")
+}
+
+enum CaseStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  DONE
+}
+
+enum SendStatus {
+  SUCCESS
+  FAILED
+}

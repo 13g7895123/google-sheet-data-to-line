@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Clock, Play, Pause } from 'lucide-react'
+import { Clock, Play, Pause, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { StatusBadge } from '@/components/common/StatusBadge'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { EmptyState } from '@/components/common/EmptyState'
-import { getSchedules, toggleSchedule } from '@/lib/api'
+import { getSchedules, toggleSchedule, deleteSchedule } from '@/lib/api'
 import { formatDate, cn } from '@/lib/utils'
+import type { Schedule } from '@/types'
 
 export function Schedules() {
   const qc = useQueryClient()
   const [statusFilter, setStatusFilter] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<Schedule | null>(null)
 
   const { data: schedules = [], isLoading } = useQuery({
     queryKey: ['schedules', statusFilter],
@@ -23,6 +26,16 @@ export function Schedules() {
     onSuccess: () => {
       toast.success('排程狀態已更新')
       void qc.invalidateQueries({ queryKey: ['schedules'] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteSchedule(id),
+    onSuccess: () => {
+      toast.success('排程已刪除')
+      void qc.invalidateQueries({ queryKey: ['schedules'] })
+      setDeleteTarget(null)
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -91,28 +104,38 @@ export function Schedules() {
                     <StatusBadge status={s.status} />
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() =>
-                        toggleMutation.mutate({
-                          id: s.id,
-                          status: s.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE',
-                        })
-                      }
-                      disabled={toggleMutation.isPending}
-                      className={cn(
-                        'w-8 h-8 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                        s.status === 'ACTIVE'
-                          ? 'text-amber-600 hover:bg-amber-50 border border-amber-200'
-                          : 'text-emerald-600 hover:bg-emerald-50 border border-emerald-200'
-                      )}
-                      title={s.status === 'ACTIVE' ? '暫停' : '啟用'}
-                      aria-label={s.status === 'ACTIVE' ? '暫停排程' : '啟用排程'}
-                    >
-                      {s.status === 'ACTIVE'
-                        ? <Pause size={14} />
-                        : <Play size={14} />
-                      }
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() =>
+                          toggleMutation.mutate({
+                            id: s.id,
+                            status: s.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE',
+                          })
+                        }
+                        disabled={toggleMutation.isPending}
+                        className={cn(
+                          'w-8 h-8 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          s.status === 'ACTIVE'
+                            ? 'text-amber-600 hover:bg-amber-50 border border-amber-200'
+                            : 'text-emerald-600 hover:bg-emerald-50 border border-emerald-200'
+                        )}
+                        title={s.status === 'ACTIVE' ? '暫停' : '啟用'}
+                        aria-label={s.status === 'ACTIVE' ? '暫停排程' : '啟用排程'}
+                      >
+                        {s.status === 'ACTIVE'
+                          ? <Pause size={14} />
+                          : <Play size={14} />
+                        }
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(s)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center border border-destructive/30 text-destructive hover:bg-red-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        title="刪除排程"
+                        aria-label="刪除排程"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -120,6 +143,17 @@ export function Schedules() {
           </table>
         )}
       </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="確認刪除排程？"
+        description={`刪除後將停止自動執行。`}
+        confirmLabel="刪除"
+        variant="destructive"
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
+        loading={deleteMutation.isPending}
+      />
     </div>
   )
 }

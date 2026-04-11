@@ -9,6 +9,7 @@ export interface Case {
   status: CaseStatus
   sheetId?: string
   sheetName?: string
+  spreadsheetId?: string
   tabName?: string
   messageTemplate?: string
   recipients: LineFriend[]
@@ -25,6 +26,7 @@ export interface CaseFormData {
   messageTemplate?: string
   recipientIds: string[]
   schedule?: ScheduleInput
+  status?: CaseStatus
 }
 
 // ─── Google Sheets ─────────────────────────────────────────────────────────

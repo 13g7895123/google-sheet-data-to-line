@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, Copy, CheckCircle, XCircle, Loader } from 'lucide-react'
 import { toast } from 'sonner'
 import { getSettings, saveSettings, testLineConnection, testGoogleConnection } from '@/lib/api'
@@ -54,6 +54,7 @@ function ConnectionStatus({ status }: { status: 'connected' | 'disconnected' | '
 }
 
 export function Settings() {
+  const qc = useQueryClient()
   const { data: settings } = useQuery({
     queryKey: ['settings'],
     queryFn: getSettings,
@@ -65,25 +66,54 @@ export function Settings() {
     lineChannelAccessToken: '',
     lineChannelSecret: '',
   })
+  const [initialized, setInitialized] = useState(false)
+
+  // 當 settings 載入後，用已儲存的值初始化表單（只執行一次）
+  useEffect(() => {
+    if (!settings || initialized) return
+    setForm({
+      googleServiceAccountEmail: settings.googleServiceAccountEmail ?? '',
+      // 後端會對已設定的機密欄位回傳 '••••••••'，原樣填入
+      googlePrivateKey: settings.googlePrivateKey ?? '',
+      lineChannelAccessToken: settings.lineChannelAccessToken ?? '',
+      lineChannelSecret: settings.lineChannelSecret ?? '',
+    })
+    setInitialized(true)
+  }, [settings, initialized])
 
   const update = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }))
 
   const saveMutation = useMutation({
     mutationFn: () => saveSettings(form),
-    onSuccess: () => toast.success('設定已儲存'),
+    onSuccess: () => {
+      toast.success('設定已儲存')
+      void qc.invalidateQueries({ queryKey: ['settings'] })
+    },
     onError: (err: Error) => toast.error(err.message),
   })
 
   const testLineMutation = useMutation({
     mutationFn: testLineConnection,
-    onSuccess: () => toast.success('LINE 連線測試成功'),
-    onError: (err: Error) => toast.error(`LINE 連線失敗：${err.message}`),
+    onSuccess: () => {
+      toast.success('LINE 連線測試成功')
+      void qc.invalidateQueries({ queryKey: ['settings'] })
+    },
+    onError: (err: Error) => {
+      toast.error(`LINE 連線失敗：${err.message}`)
+      void qc.invalidateQueries({ queryKey: ['settings'] })
+    },
   })
 
   const testGoogleMutation = useMutation({
     mutationFn: testGoogleConnection,
-    onSuccess: () => toast.success('Google 連線測試成功'),
-    onError: (err: Error) => toast.error(`Google 連線失敗：${err.message}`),
+    onSuccess: () => {
+      toast.success('Google 連線測試成功')
+      void qc.invalidateQueries({ queryKey: ['settings'] })
+    },
+    onError: (err: Error) => {
+      toast.error(`Google 連線失敗：${err.message}`)
+      void qc.invalidateQueries({ queryKey: ['settings'] })
+    },
   })
 
   const copyWebhook = () => {
@@ -110,7 +140,7 @@ export function Settings() {
             <input
               id="google-email"
               type="email"
-              value={form.googleServiceAccountEmail || settings?.googleServiceAccountEmail || ''}
+              value={form.googleServiceAccountEmail}
               onChange={(e) => update('googleServiceAccountEmail', e.target.value)}
               placeholder="xxx@xxx.iam.gserviceaccount.com"
               className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring"

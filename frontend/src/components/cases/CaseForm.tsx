@@ -1,13 +1,13 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useState, useEffect } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { SheetSelector } from '@/components/sheets/SheetSelector'
 import { MessageTemplateEditor } from '@/components/message/MessageTemplateEditor'
 import { FriendPicker } from '@/components/line/FriendPicker'
 import { CronBuilder } from '@/components/schedule/CronBuilder'
-import { createCase } from '@/lib/api'
+import { createCase, updateCase, getCase } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import type { CaseFormData, ScheduleInput, SheetPreviewRow } from '@/types'
 
@@ -48,12 +48,78 @@ const initialState: FormState = {
   schedule: defaultSchedule,
 }
 
+/** 將 cronExpression 反解析回 ScheduleInput 視覺欄位 */
+function parseCronToInput(cronExpr: string): Partial<ScheduleInput> {
+  const parts = cronExpr.trim().split(/\s+/)
+  if (parts.length < 5) return {}
+  const [minStr, hourStr, domStr, , dowStr] = parts
+  const minute = parseInt(minStr, 10)
+  const hour = hourStr === '*' ? undefined : parseInt(hourStr, 10)
+  const dom = domStr === '*' ? undefined : parseInt(domStr, 10)
+  const dow = dowStr === '*' ? undefined : parseInt(dowStr, 10)
+
+  if (hour === undefined) return { frequency: 'hourly', minute }
+  if (dom === undefined && dow === undefined) return { frequency: 'daily', hour, minute }
+  if (dow !== undefined) return { frequency: 'weekly', hour, minute, dayOfWeek: dow }
+  return { frequency: 'monthly', hour, minute, dayOfMonth: dom }
+}
+
 export function CaseForm() {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const { id } = useParams<{ id: string }>()
+  const isEditMode = !!id
+
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<FormState>(initialState)
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
+  const [initialized, setInitialized] = useState(false)
+
+  // 編輯模式：載入既有 case 資料
+  const { data: existingCase, isLoading: caseLoading } = useQuery({
+    queryKey: ['case', id],
+    queryFn: () => getCase(id!),
+    enabled: isEditMode,
+  })
+
+  // 將既有資料填入表單（只執行一次）
+  useEffect(() => {
+    if (!isEditMode || !existingCase || initialized) return
+
+    const schedule = existingCase.schedule
+    let scheduleInput: ScheduleInput = defaultSchedule
+
+    if (schedule) {
+      if (schedule.type === 'once') {
+        scheduleInput = { type: 'once', runOnce: schedule.runOnce ?? '' }
+      } else if (schedule.type === 'recurring' && schedule.cronExpression) {
+        const parsed = parseCronToInput(schedule.cronExpression)
+        scheduleInput = {
+          type: 'recurring',
+          frequency: parsed.frequency ?? 'daily',
+          hour: parsed.hour ?? 9,
+          minute: parsed.minute ?? 0,
+          dayOfMonth: parsed.dayOfMonth ?? 1,
+          dayOfWeek: parsed.dayOfWeek ?? 1,
+          cronExpression: schedule.cronExpression,
+        }
+      }
+    }
+
+    setForm({
+      name: existingCase.name,
+      description: existingCase.description ?? '',
+      spreadsheetId: existingCase.spreadsheetId ?? '',
+      spreadsheetName: existingCase.sheetName ?? '',
+      tabName: existingCase.tabName ?? '',
+      columns: [],
+      previewRows: [],
+      messageTemplate: existingCase.messageTemplate ?? '',
+      recipientIds: existingCase.recipients.map((r) => r.id),
+      schedule: scheduleInput,
+    })
+    setInitialized(true)
+  }, [existingCase, isEditMode, initialized])
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((f) => ({ ...f, [key]: value }))
@@ -86,16 +152,18 @@ export function CaseForm() {
 
   const prevStep = () => setStep((s) => s - 1)
 
-  const mutation = useMutation({
-    mutationFn: (_asDraft: boolean) => createCase({
-      name: form.name,
-      description: form.description || undefined,
-      spreadsheetId: form.spreadsheetId,
-      tabName: form.tabName,
-      messageTemplate: form.messageTemplate,
-      recipientIds: form.recipientIds,
-      schedule: form.schedule.type !== 'none' ? form.schedule : undefined,
-    } satisfies CaseFormData),
+  const buildPayload = (): CaseFormData => ({
+    name: form.name,
+    description: form.description || undefined,
+    spreadsheetId: form.spreadsheetId,
+    tabName: form.tabName,
+    messageTemplate: form.messageTemplate,
+    recipientIds: form.recipientIds,
+    schedule: form.schedule.type !== 'none' ? form.schedule : undefined,
+  })
+
+  const createMutation = useMutation({
+    mutationFn: () => createCase(buildPayload()),
     onSuccess: (created) => {
       toast.success('Case 建立成功！')
       void qc.invalidateQueries({ queryKey: ['cases'] })
@@ -104,8 +172,57 @@ export function CaseForm() {
     onError: (err: Error) => toast.error(err.message),
   })
 
+  const updateMutation = useMutation({
+    mutationFn: () => updateCase(id!, buildPayload()),
+    onSuccess: (updated) => {
+      toast.success('Case 已更新')
+      void qc.invalidateQueries({ queryKey: ['cases'] })
+      void qc.invalidateQueries({ queryKey: ['case', id] })
+      navigate(`/cases/${updated.id}`)
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const isPending = createMutation.isPending || updateMutation.isPending
+
+  const handleSubmit = () => {
+    if (isEditMode) {
+      updateMutation.mutate()
+    } else {
+      createMutation.mutate()
+    }
+  }
+
+  const handleSaveAsDraft = () => {
+    if (isEditMode) {
+      updateMutation.mutate()
+    } else {
+      createMutation.mutate()
+    }
+  }
+
+  const confirmLabel = isEditMode ? '儲存變更' : '建立'
+  const draftLabel = isEditMode ? '取消' : '儲存為草稿'
+
+  // 編輯模式載入中
+  if (isEditMode && caseLoading) {
+    return (
+      <div className="max-w-2xl mx-auto space-y-4 animate-pulse">
+        <div className="h-8 bg-muted rounded w-64" />
+        <div className="h-96 bg-muted rounded-xl" />
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-base font-semibold text-foreground">
+          {isEditMode ? `編輯 Case：${existingCase?.name ?? ''}` : '新增 Case'}
+        </h1>
+      </div>
+
       {/* Stepper */}
       <div className="mb-8">
         <div className="flex items-center gap-0">
@@ -196,15 +313,16 @@ export function CaseForm() {
             <SheetSelector
               spreadsheetId={form.spreadsheetId}
               tabName={form.tabName}
-              onSpreadsheetChange={(id, name) => {
-                update('spreadsheetId', id)
+              onSpreadsheetChange={(sheetSpreadsheetId, name) => {
+                update('spreadsheetId', sheetSpreadsheetId)
                 update('spreadsheetName', name)
                 update('tabName', '')
                 update('columns', [])
               }}
-              onTabChange={(tab, cols) => {
+              onTabChange={(tab, cols, rows) => {
                 update('tabName', tab)
                 update('columns', cols)
+                update('previewRows', rows)
               }}
             />
             {errors.spreadsheetId && <p className="text-xs text-destructive mt-2" role="alert">{errors.spreadsheetId}</p>}
@@ -297,49 +415,47 @@ export function CaseForm() {
                 onClick={prevStep}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <ChevronLeft size={16} /> 上一步
+                <ChevronLeft size={14} /> 上一步
               </button>
             ) : (
               <button
                 type="button"
-                onClick={() => navigate('/cases')}
-                className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => navigate(isEditMode ? `/cases/${id}` : '/cases')}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 取消
               </button>
             )}
           </div>
 
-          <div className="flex gap-3">
-            {step < STEPS.length - 1 ? (
+          <div className="flex gap-2">
+            {step === STEPS.length - 1 ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSaveAsDraft}
+                  disabled={isPending}
+                  className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {draftLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isPending}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {isPending ? '處理中...' : confirmLabel}
+                </button>
+              </>
+            ) : (
               <button
                 type="button"
                 onClick={nextStep}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-blue-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                下一步 <ChevronRight size={16} />
+                下一步 <ChevronRight size={14} />
               </button>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => mutation.mutate(true)}
-                  disabled={mutation.isPending}
-                  className="px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  儲存為草稿
-                </button>
-                <button
-                  type="button"
-                  onClick={() => mutation.mutate(false)}
-                  disabled={mutation.isPending}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {mutation.isPending ? '建立中...' : (
-                    <><Check size={16} /> 建立</>
-                  )}
-                </button>
-              </>
             )}
           </div>
         </div>

@@ -6,8 +6,9 @@ import { toast } from 'sonner'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { SendLogTable } from '@/components/logs/SendLogTable'
-import { getCase, deleteCase, sendCase } from '@/lib/api'
-import { cn } from '@/lib/utils'
+import { getCase, deleteCase, sendCase, patchCaseStatus } from '@/lib/api'
+import { cn, formatDate } from '@/lib/utils'
+import type { CaseStatus } from '@/types'
 
 const TABS = [
   { id: 'overview', label: '概覽', icon: LayoutDashboard },
@@ -48,6 +49,17 @@ export function CaseDetail() {
     onError: (err: Error) => toast.error(err.message),
   })
 
+  const statusMutation = useMutation({
+    mutationFn: (status: CaseStatus) => patchCaseStatus(id!, status),
+    onSuccess: (updated) => {
+      const labels: Record<CaseStatus, string> = { DRAFT: '草稿', ACTIVE: '啟用', PAUSED: '暫停', DONE: '完成' }
+      toast.success(`Case 狀態已更新為「${labels[updated.status]}」`)
+      void qc.invalidateQueries({ queryKey: ['case', id] })
+      void qc.invalidateQueries({ queryKey: ['cases'] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
   if (isLoading) {
     return (
       <div className="space-y-4 animate-pulse">
@@ -80,7 +92,21 @@ export function CaseDetail() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Status selector */}
+          <select
+            value={c.status}
+            onChange={(e) => statusMutation.mutate(e.target.value as CaseStatus)}
+            disabled={statusMutation.isPending}
+            className="h-9 px-3 rounded-lg border border-border bg-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 cursor-pointer"
+            aria-label="切換 Case 狀態"
+          >
+            <option value="DRAFT">草稿</option>
+            <option value="ACTIVE">啟用</option>
+            <option value="PAUSED">暫停</option>
+            <option value="DONE">完成</option>
+          </select>
+
           <Link
             to={`/cases/${id}/edit`}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm font-medium text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -189,7 +215,7 @@ export function CaseDetail() {
                 {c.schedule.nextRunAt && (
                   <div className="flex gap-2">
                     <dt className="text-muted-foreground w-24 shrink-0">下次執行</dt>
-                    <dd className="text-foreground">{c.schedule.nextRunAt}</dd>
+                    <dd className="text-foreground">{formatDate(c.schedule.nextRunAt)}</dd>
                   </div>
                 )}
               </dl>

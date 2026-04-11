@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
 import * as Dialog from '@radix-ui/react-dialog'
@@ -11,7 +11,7 @@ interface SheetSelectorProps {
   spreadsheetId?: string
   tabName?: string
   onSpreadsheetChange: (id: string, name: string) => void
-  onTabChange: (tab: string, columns: string[]) => void
+  onTabChange: (tab: string, columns: string[], previewRows: SheetPreviewRow[]) => void
 }
 
 export function SheetSelector({ spreadsheetId, tabName, onSpreadsheetChange, onTabChange }: SheetSelectorProps) {
@@ -19,6 +19,10 @@ export function SheetSelector({ spreadsheetId, tabName, onSpreadsheetChange, onT
   const [urlInput, setUrlInput] = useState('')
   const [previewRows, setPreviewRows] = useState<SheetPreviewRow[]>([])
   const qc = useQueryClient()
+
+  // Use ref to avoid stale closures in useEffect without adding callback to deps
+  const onTabChangeRef = useRef(onTabChange)
+  useEffect(() => { onTabChangeRef.current = onTabChange })
 
   const { data: sheets = [] } = useQuery({
     queryKey: ['sheets'],
@@ -34,12 +38,12 @@ export function SheetSelector({ spreadsheetId, tabName, onSpreadsheetChange, onT
   })
 
   useEffect(() => {
-    if (previewData) {
+    if (previewData && tabName) {
       setPreviewRows(previewData)
       const cols = previewData.length > 0 ? Object.keys(previewData[0]) : []
-      onTabChange(tabName!, cols)
+      onTabChangeRef.current(tabName, cols, previewData)
     }
-  }, [previewData, tabName, onTabChange])
+  }, [previewData, tabName])
 
   const addMutation = useMutation({
     mutationFn: () => addSheet(urlInput),
@@ -93,7 +97,7 @@ export function SheetSelector({ spreadsheetId, tabName, onSpreadsheetChange, onT
           <select
             value={tabName ?? ''}
             onChange={(e) => {
-              if (e.target.value) onTabChange(e.target.value, [])
+              if (e.target.value) onTabChange(e.target.value, [], [])
             }}
             className="w-full h-10 px-3 rounded-lg border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             aria-label="選擇工作表"

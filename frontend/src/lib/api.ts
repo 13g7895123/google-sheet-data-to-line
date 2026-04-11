@@ -38,8 +38,11 @@ export const getCase = (id: string) =>
 export const createCase = (data: CaseFormData) =>
   api.post<Case>('/cases', data).then((r) => r.data)
 
-export const updateCase = (id: string, data: Partial<CaseFormData>) =>
+export const updateCase = (id: string, data: CaseFormData) =>
   api.put<Case>(`/cases/${id}`, data).then((r) => r.data)
+
+export const patchCaseStatus = (id: string, status: import('@/types').CaseStatus) =>
+  api.put<Case>(`/cases/${id}`, { status }).then((r) => r.data)
 
 export const deleteCase = (id: string) =>
   api.delete(`/cases/${id}`).then((r) => r.data)
@@ -84,6 +87,9 @@ export const getUpcomingSchedules = (limit = 5) =>
 
 export const toggleSchedule = (id: string, status: 'ACTIVE' | 'PAUSED') =>
   api.patch<Schedule>(`/schedules/${id}`, { status }).then((r) => r.data)
+
+export const deleteSchedule = (id: string) =>
+  api.delete(`/schedules/${id}`).then((r) => r.data)
 
 // ─── Send Logs ───────────────────────────────────────────────────────────────
 
