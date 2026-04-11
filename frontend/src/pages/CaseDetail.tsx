@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Pencil, Send, Trash2, Users, Clock, FileText, LayoutDashboard } from 'lucide-react'
+import { ArrowLeft, Pencil, Send, Trash2, Users, Clock, FileText, LayoutDashboard, Play, Pause } from 'lucide-react'
 import { toast } from 'sonner'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { SendLogTable } from '@/components/logs/SendLogTable'
-import { getCase, deleteCase, sendCase, patchCaseStatus } from '@/lib/api'
+import { getCase, deleteCase, sendCase, patchCaseStatus, toggleSchedule } from '@/lib/api'
 import { cn, formatDate } from '@/lib/utils'
 import type { CaseStatus } from '@/types'
 
@@ -56,6 +56,17 @@ export function CaseDetail() {
       toast.success(`Case 狀態已更新為「${labels[updated.status]}」`)
       void qc.invalidateQueries({ queryKey: ['case', id] })
       void qc.invalidateQueries({ queryKey: ['cases'] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const scheduleToggleMutation = useMutation({
+    mutationFn: ({ scheduleId, status }: { scheduleId: string; status: 'ACTIVE' | 'PAUSED' }) =>
+      toggleSchedule(scheduleId, status),
+    onSuccess: () => {
+      toast.success('排程狀態已更新')
+      void qc.invalidateQueries({ queryKey: ['case', id] })
+      void qc.invalidateQueries({ queryKey: ['schedules'] })
     },
     onError: (err: Error) => toast.error(err.message),
   })
@@ -187,9 +198,17 @@ export function CaseDetail() {
             <div className="divide-y divide-border">
               {c.recipients.map((r) => (
                 <div key={r.id} className="flex items-center gap-3 px-5 py-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary shrink-0">
-                    {r.displayName[0]}
-                  </div>
+                  {r.pictureUrl ? (
+                    <img
+                      src={r.pictureUrl}
+                      alt={r.displayName}
+                      className="w-8 h-8 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary shrink-0">
+                      {r.displayName[0]}
+                    </div>
+                  )}
                   <span className="text-sm text-foreground">{r.displayName}</span>
                 </div>
               ))}
@@ -218,6 +237,32 @@ export function CaseDetail() {
                     <dd className="text-foreground">{formatDate(c.schedule.nextRunAt)}</dd>
                   </div>
                 )}
+                <div className="flex gap-2 items-center pt-1">
+                  <dt className="text-muted-foreground w-24 shrink-0">狀態</dt>
+                  <dd className="flex items-center gap-2">
+                    <StatusBadge status={c.schedule.status} />
+                    <button
+                      onClick={() =>
+                        scheduleToggleMutation.mutate({
+                          scheduleId: c.schedule!.id,
+                          status: c.schedule!.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE',
+                        })
+                      }
+                      disabled={scheduleToggleMutation.isPending}
+                      className={cn(
+                        'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        c.schedule.status === 'ACTIVE'
+                          ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
+                          : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                      )}
+                    >
+                      {c.schedule.status === 'ACTIVE'
+                        ? <><Pause size={12} /> 暫停</>
+                        : <><Play size={12} /> 啟用</>
+                      }
+                    </button>
+                  </dd>
+                </div>
               </dl>
             ) : (
               <p className="text-sm text-muted-foreground">未設定排程</p>

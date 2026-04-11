@@ -11,16 +11,19 @@ export function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: getDashboardStats,
+    refetchInterval: 30_000,
   })
 
   const { data: logsData, isLoading: logsLoading } = useQuery({
     queryKey: ['recent-logs'],
     queryFn: () => getLogs({ limit: 10 }),
+    refetchInterval: 30_000,
   })
 
   const { data: schedules, isLoading: schedulesLoading } = useQuery({
     queryKey: ['upcoming-schedules'],
     queryFn: () => getUpcomingSchedules(5),
+    refetchInterval: 60_000,
   })
 
   return (

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
-import { Clock, Play, Pause, Trash2 } from 'lucide-react'
+import { Clock, Play, Pause, Trash2, PlayCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { EmptyState } from '@/components/common/EmptyState'
-import { getSchedules, toggleSchedule, deleteSchedule } from '@/lib/api'
+import { getSchedules, toggleSchedule, deleteSchedule, sendCase } from '@/lib/api'
 import { formatDate, cn } from '@/lib/utils'
 import type { Schedule } from '@/types'
 
@@ -37,6 +37,12 @@ export function Schedules() {
       void qc.invalidateQueries({ queryKey: ['schedules'] })
       setDeleteTarget(null)
     },
+    onError: (err: Error) => toast.error(err.message),
+  })
+
+  const runNowMutation = useMutation({
+    mutationFn: (caseId: string) => sendCase(caseId),
+    onSuccess: () => toast.success('已觸發立即執行'),
     onError: (err: Error) => toast.error(err.message),
   })
 
@@ -105,6 +111,15 @@ export function Schedules() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => runNowMutation.mutate(s.caseId)}
+                        disabled={runNowMutation.isPending}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        title="立即執行"
+                        aria-label="立即執行"
+                      >
+                        <PlayCircle size={14} />
+                      </button>
                       <button
                         onClick={() =>
                           toggleMutation.mutate({
