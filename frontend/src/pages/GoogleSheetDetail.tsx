@@ -1,18 +1,29 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 import { SheetPreview } from '@/components/sheets/SheetPreview'
-import { getSheet, getSheetPreview } from '@/lib/api'
+import { getSheet, getSheetPreview, syncSheet } from '@/lib/api'
 
 export function GoogleSheetDetail() {
   const { id } = useParams<{ id: string }>()
   const [selectedTab, setSelectedTab] = useState<string | null>(null)
+  const qc = useQueryClient()
 
   const { data: sheet, isLoading } = useQuery({
     queryKey: ['sheet', id],
     queryFn: () => getSheet(id!),
     enabled: !!id,
+  })
+
+  const syncMutation = useMutation({
+    mutationFn: () => syncSheet(id!),
+    onSuccess: () => {
+      toast.success('工作表已同步')
+      void qc.invalidateQueries({ queryKey: ['sheet', id] })
+    },
+    onError: (err: Error) => toast.error(err.message),
   })
 
   const { data: previewRows = [] } = useQuery({
@@ -42,10 +53,19 @@ export function GoogleSheetDetail() {
         >
           <ArrowLeft size={16} />
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-base font-semibold text-foreground">📊 {sheet.name}</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Spreadsheet ID: {sheet.spreadsheetId}</p>
         </div>
+        <button
+          onClick={() => syncMutation.mutate()}
+          disabled={syncMutation.isPending}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          title="重新從 Google 同步工作表資訊"
+        >
+          <RefreshCw size={13} className={syncMutation.isPending ? 'animate-spin' : ''} />
+          {syncMutation.isPending ? '同步中...' : '同步工作表'}
+        </button>
       </div>
 
       <div className="bg-white rounded-xl border border-border">

@@ -122,9 +122,17 @@ export function FriendPicker({ selectedIds, onChange }: FriendPickerProps) {
                       className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
                       aria-label={f.displayName}
                     />
-                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary shrink-0">
-                      {f.displayName[0]}
-                    </div>
+                    {f.pictureUrl ? (
+                      <img
+                        src={f.pictureUrl}
+                        alt={f.displayName}
+                        className="w-7 h-7 rounded-full object-cover shrink-0"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary shrink-0">
+                        {f.displayName[0]}
+                      </div>
+                    )}
                     <span className="text-sm text-foreground truncate">{f.displayName}</span>
                   </label>
                 )
@@ -144,9 +152,17 @@ export function FriendPicker({ selectedIds, onChange }: FriendPickerProps) {
             ) : (
               selectedFriends.map((f) => (
                 <div key={f.id} className="flex items-center gap-3 px-3 py-2.5 border-b border-border last:border-0">
-                  <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary shrink-0">
-                    {f.displayName[0]}
-                  </div>
+                  {f.pictureUrl ? (
+                    <img
+                      src={f.pictureUrl}
+                      alt={f.displayName}
+                      className="w-7 h-7 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary shrink-0">
+                      {f.displayName[0]}
+                    </div>
+                  )}
                   <span className="text-sm text-foreground flex-1 truncate">{f.displayName}</span>
                   <button
                     type="button"

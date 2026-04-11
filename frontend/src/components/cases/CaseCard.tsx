@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { deleteCase, sendCase } from '@/lib/api'
+import { describeCron } from '@/lib/utils'
 import type { Case } from '@/types'
 
 interface CaseCardProps {
@@ -66,7 +67,7 @@ export function CaseCard({ case_: c }: CaseCardProps) {
           {c.schedule?.cronExpression && (
             <div className="flex items-center gap-1.5">
               <Clock size={12} className="shrink-0" />
-              <span className="truncate">{c.schedule.cronExpression}</span>
+              <span className="truncate">{describeCron(c.schedule.cronExpression)}</span>
             </div>
           )}
         </div>

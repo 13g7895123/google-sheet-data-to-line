@@ -64,6 +64,9 @@ export const addSheet = (urlOrId: string) =>
 export const deleteSheet = (id: string) =>
   api.delete(`/sheets/${id}`).then((r) => r.data)
 
+export const syncSheet = (id: string) =>
+  api.post(`/sheets/${id}/sync`).then((r) => r.data)
+
 export const getSheetPreview = (spreadsheetId: string, tabName: string, limit = 5) =>
   api.get<SheetPreviewRow[]>(`/sheets/${spreadsheetId}/preview`, {
     params: { tab: tabName, limit },

@@ -166,6 +166,9 @@ export function Settings() {
               onChange={(v) => update('googlePrivateKey', v)}
               placeholder="-----BEGIN PRIVATE KEY-----..."
             />
+            {form.googlePrivateKey === '••••••••' && (
+              <p className="text-xs text-emerald-600 mt-1">✔ 已設定，請重新輸入以修改</p>
+            )}
           </div>
 
           <button
@@ -195,6 +198,9 @@ export function Settings() {
               value={form.lineChannelAccessToken}
               onChange={(v) => update('lineChannelAccessToken', v)}
             />
+            {form.lineChannelAccessToken === '••••••••' && (
+              <p className="text-xs text-emerald-600 mt-1">✔ 已設定，請重新輸入以修改</p>
+            )}
           </div>
 
           <div>
@@ -206,6 +212,9 @@ export function Settings() {
               value={form.lineChannelSecret}
               onChange={(v) => update('lineChannelSecret', v)}
             />
+            {form.lineChannelSecret === '••••••••' && (
+              <p className="text-xs text-emerald-600 mt-1">✔ 已設定，請重新輸入以修改</p>
+            )}
           </div>
 
           {/* Webhook URL */}

@@ -56,6 +56,19 @@ sheetsRouter.delete('/:id', async (c) => {
   return c.json({ ok: true })
 })
 
+// POST /api/sheets/:id/sync — 重新向 Google API 拉取最新 tabs
+sheetsRouter.post('/:id/sync', async (c) => {
+  const sheet = await prisma.googleSheet.findUniqueOrThrow({
+    where: { id: c.req.param('id') },
+  })
+  const updated = await registerSheet(sheet.spreadsheetId)
+  const withCount = await prisma.googleSheet.findUniqueOrThrow({
+    where: { id: updated.id },
+    include: { tabs: true, _count: { select: { cases: true } } },
+  })
+  return c.json(formatSheet(withCount))
+})
+
 // GET /api/sheets/:spreadsheetId/preview?tab=&limit=
 sheetsRouter.get('/:spreadsheetId/preview', async (c) => {
   const { spreadsheetId } = c.req.param()

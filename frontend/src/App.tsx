@@ -12,6 +12,7 @@ import { LineFriends } from '@/pages/LineFriends'
 import { Schedules } from '@/pages/Schedules'
 import { Logs } from '@/pages/Logs'
 import { Settings } from '@/pages/Settings'
+import { NotFound } from '@/pages/NotFound'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,6 +40,7 @@ export default function App() {
             <Route path="schedules" element={<Schedules />} />
             <Route path="logs" element={<Logs />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </BrowserRouter>
