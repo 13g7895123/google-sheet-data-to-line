@@ -39,7 +39,7 @@ export function Cases() {
   })
 
   return (
-    <div className="space-y-5 max-w-7xl">
+    <div className="space-y-5">
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">

@@ -43,7 +43,7 @@ export function GoogleSheets() {
   })
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div />

@@ -54,8 +54,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors duration-150 relative',
                 'hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                 isActive
-                  ? 'bg-primary/8 text-primary before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-primary before:rounded-r'
-                  : 'text-muted-foreground',
+                  ? 'bg-blue-50 text-primary before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-primary before:rounded-r'
+                  : 'text-slate-500',
                 collapsed && 'justify-center px-0'
               )
             }

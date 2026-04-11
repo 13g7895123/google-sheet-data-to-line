@@ -50,7 +50,7 @@ export function CaseDetail() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4 max-w-4xl animate-pulse">
+      <div className="space-y-4 animate-pulse">
         <div className="h-8 bg-muted rounded w-64" />
         <div className="h-48 bg-muted rounded-xl" />
       </div>
@@ -60,7 +60,7 @@ export function CaseDetail() {
   if (!c) return null
 
   return (
-    <div className="space-y-5 max-w-4xl">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">

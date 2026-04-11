@@ -24,7 +24,7 @@ export function Dashboard() {
   })
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-6">
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statsLoading ? (

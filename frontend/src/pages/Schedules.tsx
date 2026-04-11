@@ -28,7 +28,7 @@ export function Schedules() {
   })
 
   return (
-    <div className="space-y-5 max-w-4xl">
+    <div className="space-y-5">
       {/* Filter */}
       <div>
         <select

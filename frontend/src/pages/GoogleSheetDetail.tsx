@@ -23,7 +23,7 @@ export function GoogleSheetDetail() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4 max-w-3xl animate-pulse">
+      <div className="space-y-4 animate-pulse">
         <div className="h-8 bg-muted rounded w-48" />
         <div className="h-40 bg-muted rounded-xl" />
       </div>
@@ -33,7 +33,7 @@ export function GoogleSheetDetail() {
   if (!sheet) return null
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="space-y-5">
       <div className="flex items-center gap-3">
         <Link
           to="/google-sheets"
