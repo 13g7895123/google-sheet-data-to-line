@@ -91,8 +91,7 @@ export function LineFriends() {
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground w-12">頭像</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">顯示名稱</th>
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">狀態訊息</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">關聯 Case</th>
-                <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground">操作</th>
+                <th className="text-center px-4 py-3 text-xs font-medium text-muted-foreground">關聯 Case</th>
               </tr>
             </thead>
             <tbody>
@@ -111,11 +110,6 @@ export function LineFriends() {
                   <td className="px-4 py-3 text-muted-foreground truncate max-w-[160px]">{f.statusMessage || '—'}</td>
                   <td className="px-4 py-3 text-center">
                     <span className="text-xs font-medium text-foreground">{f.caseCount ?? 0}</span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button className="text-xs text-primary hover:underline focus-visible:outline-none">
-                      詳情
-                    </button>
                   </td>
                 </tr>
               ))}

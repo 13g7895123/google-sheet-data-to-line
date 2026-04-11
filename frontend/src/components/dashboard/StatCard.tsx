@@ -1,4 +1,5 @@
 import { TrendingUp, TrendingDown } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
 
@@ -7,12 +8,17 @@ interface StatCardProps {
   label: string
   value: string | number
   trend?: number
+  href?: string
   className?: string
 }
 
-export function StatCard({ icon, label, value, trend, className }: StatCardProps) {
-  return (
-    <div className={cn('bg-white rounded-xl border border-border p-5 flex items-start gap-4', className)}>
+export function StatCard({ icon, label, value, trend, href, className }: StatCardProps) {
+  const inner = (
+    <div className={cn(
+      'bg-white rounded-xl border border-border p-5 flex items-start gap-4',
+      href && 'hover:shadow-sm transition-shadow cursor-pointer',
+      className
+    )}>
       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
         {icon}
       </div>
@@ -34,4 +40,9 @@ export function StatCard({ icon, label, value, trend, className }: StatCardProps
       </div>
     </div>
   )
+
+  if (href) {
+    return <Link to={href} className="block">{inner}</Link>
+  }
+  return inner
 }

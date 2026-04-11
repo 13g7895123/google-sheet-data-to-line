@@ -94,8 +94,12 @@ export function Settings() {
 
   const testLineMutation = useMutation({
     mutationFn: testLineConnection,
-    onSuccess: () => {
-      toast.success('LINE 連線測試成功')
+    onSuccess: (data: { connected: boolean }) => {
+      if (data.connected) {
+        toast.success('LINE 連線測試成功')
+      } else {
+        toast.error('LINE 連線失敗，請確認 Channel Access Token 與 Secret')
+      }
       void qc.invalidateQueries({ queryKey: ['settings'] })
     },
     onError: (err: Error) => {
@@ -106,8 +110,12 @@ export function Settings() {
 
   const testGoogleMutation = useMutation({
     mutationFn: testGoogleConnection,
-    onSuccess: () => {
-      toast.success('Google 連線測試成功')
+    onSuccess: (data: { connected: boolean }) => {
+      if (data.connected) {
+        toast.success('Google 連線測試成功')
+      } else {
+        toast.error('Google 連線失敗，請確認 Service Account Email 與 Private Key')
+      }
       void qc.invalidateQueries({ queryKey: ['settings'] })
     },
     onError: (err: Error) => {

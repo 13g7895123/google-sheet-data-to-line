@@ -195,14 +195,14 @@ export function CaseForm() {
 
   const handleSaveAsDraft = () => {
     if (isEditMode) {
-      updateMutation.mutate()
+      navigate(`/cases/${id}`)
     } else {
       createMutation.mutate()
     }
   }
 
   const confirmLabel = isEditMode ? '儲存變更' : '建立'
-  const draftLabel = isEditMode ? '取消' : '儲存為草稿'
+  const draftLabel = isEditMode ? '取消編輯' : '儲存為草稿'
 
   // 編輯模式載入中
   if (isEditMode && caseLoading) {

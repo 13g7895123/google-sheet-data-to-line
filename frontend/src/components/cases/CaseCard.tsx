@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Send, Pencil, FileText, Trash2, Users, Clock, Sheet } from 'lucide-react'
 import { toast } from 'sonner'
@@ -42,9 +42,12 @@ export function CaseCard({ case_: c }: CaseCardProps) {
       <div className="bg-white rounded-xl border border-border p-5 flex flex-col gap-4 hover:shadow-sm transition-shadow">
         {/* Header */}
         <div className="flex items-start justify-between gap-2">
-          <h3 className="text-sm font-semibold text-foreground leading-tight line-clamp-2 flex-1">
+          <Link
+            to={`/cases/${c.id}`}
+            className="text-sm font-semibold text-foreground leading-tight line-clamp-2 flex-1 hover:text-primary hover:underline"
+          >
             {c.name}
-          </h3>
+          </Link>
           <StatusBadge status={c.status} className="shrink-0" />
         </div>
 

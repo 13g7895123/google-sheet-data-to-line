@@ -45,21 +45,25 @@ export function Dashboard() {
               icon={<FolderOpen size={18} />}
               label="Case 總數"
               value={stats?.totalCases ?? 0}
+              href="/cases"
             />
             <StatCard
               icon={<Send size={18} />}
               label="今日發送數"
               value={stats?.todaySentCount ?? 0}
+              href="/logs"
             />
             <StatCard
               icon={<TrendingUp size={18} />}
               label="成功率"
               value={`${stats?.successRate ?? 0}%`}
+              href="/logs"
             />
             <StatCard
               icon={<Clock size={18} />}
               label="排程中 Case"
               value={stats?.activeCaseCount ?? 0}
+              href="/schedules"
             />
           </>
         )}
@@ -103,8 +107,13 @@ export function Dashboard() {
                       <td className="px-5 py-3 text-xs text-muted-foreground whitespace-nowrap">
                         {formatShortDate(log.sentAt)}
                       </td>
-                      <td className="px-4 py-3 font-medium text-foreground truncate max-w-[120px]">
-                        {log.caseName}
+                      <td className="px-4 py-3 font-medium truncate max-w-[120px]">
+                        <Link
+                          to={`/cases/${log.caseId}`}
+                          className="text-foreground hover:text-primary hover:underline"
+                        >
+                          {log.caseName}
+                        </Link>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{log.recipientName}</td>
                       <td className="px-4 py-3">
@@ -149,7 +158,12 @@ export function Dashboard() {
             <div className="p-3 space-y-2">
               {schedules.map((s) => (
                 <div key={s.id} className="p-3 rounded-lg bg-muted/50 border border-border/60">
-                  <p className="text-sm font-medium text-foreground truncate">{s.caseName}</p>
+                  <Link
+                    to={`/cases/${s.caseId}`}
+                    className="text-sm font-medium text-foreground truncate block hover:text-primary hover:underline"
+                  >
+                    {s.caseName}
+                  </Link>
                   {s.nextRunAt && (
                     <p className="text-xs text-muted-foreground mt-1">
                       <Clock size={11} className="inline mr-1" />
