@@ -30,7 +30,7 @@ services:
       context: ./frontend
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "8080:80"   # 外層 Nginx 再 proxy 到此 port，避免與宿主機 Nginx port 80 衝突
     depends_on:
       backend:
         condition: service_healthy
