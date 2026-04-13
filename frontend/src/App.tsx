@@ -13,6 +13,7 @@ import { Schedules } from '@/pages/Schedules'
 import { Logs } from '@/pages/Logs'
 import { Settings } from '@/pages/Settings'
 import { NotFound } from '@/pages/NotFound'
+import { SeedAdmin } from '@/pages/SeedAdmin'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +41,7 @@ export default function App() {
             <Route path="schedules" element={<Schedules />} />
             <Route path="logs" element={<Logs />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="sadmin" element={<SeedAdmin />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

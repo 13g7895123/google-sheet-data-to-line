@@ -55,7 +55,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 'hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                 isActive
                   ? 'bg-blue-50 text-primary before:absolute before:left-0 before:top-2 before:bottom-2 before:w-0.5 before:bg-primary before:rounded-r'
-                  : 'text-slate-500',
+                  : 'text-slate-700',
                 collapsed && 'justify-center px-0'
               )
             }

@@ -9,6 +9,7 @@ import { schedulesRouter } from './routes/schedules'
 import { logsRouter } from './routes/logs'
 import { dashboardRouter } from './routes/dashboard'
 import { settingsRouter } from './routes/settings'
+import { sadminRouter } from './routes/sadmin'
 
 const app = new Hono()
 
@@ -36,5 +37,6 @@ app.route('/api/schedules', schedulesRouter)
 app.route('/api/logs', logsRouter)
 app.route('/api/dashboard', dashboardRouter)
 app.route('/api/settings', settingsRouter)
+app.route('/api/sadmin', sadminRouter)
 
 export default app
